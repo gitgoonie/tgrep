@@ -19,7 +19,8 @@ def main():
 # tgrep.py matchstring filename  
 #
 
-    import argparse, sys, fileinput
+#    import argparse, sys, fileinput
+    import socket, struct, sys, re, fileinput
     from optparse import OptionParser
 
     parser = OptionParser(usage="Usage: %prog [options] [file, file, ...]")
@@ -41,31 +42,45 @@ def main():
     para = [ '' ]
 
     del args[0]     # remove match code and leave files
+
+    try:
+        for line in fileinput.input(args):
     
-    for line in fileinput.input(args):
+            if line[0] !=' ':    # if begin of new paragraph
+                if output == 1:      # eventually print last paragraph and reset paraarray
+                    while n < len(para):
+                        print para[n],
+                        n = n + 1
+                    output = 0
+                    para = [ '' ]
+                    i = 0            # (not used)
+                    n = 0
+                else:                # else reset paraarray only
+                    para = [ '' ]
+                    i = 0
+                if match in line:  # if matchcode found set output flag
+                    output = 1
 
-        if line[0] !=' ':    # if begin of new paragraph
-            if output == 1:      # eventually print last paragraph and reset paraarray
-                while n < len(para):
-                    print para[n],
-                    n = n + 1
-                output = 0
-                para = [ '' ]
-                i = 0            # (not used)
-                n = 0
-            else:                # else reset paraarray only
-                para = [ '' ]
-                i = 0
-            if match in line:  # if matchcode found set output flag
-                output = 1
+            elif line[0] == ' ':   # if line belongs to a paragraph...
+                i = i + 1          # (not used)
+                if match in line:  # check matchode and set output flag in case
+                    output = 1
+            else:
+                print "*** WARNING: Line not classified ***"    # For debug
+                print line
+            para.append(line)  # save line
 
-        elif line[0] == ' ':   # if line belongs to a paragraph...
-            i = i + 1          # (not used)
-            if match in line:  # check matchode and set output flag in case
-                output = 1
-        else:
-            print "*** WARNING: Line not classified ***"    # For debug
-            print line
-        para.append(line)  # save line
-
+    except IOError as err:
+        print "--------------------------------------------------------------"
+        print "my exception handling:"
+        print "I/O error({0}): {1}".format(err.errno, err.strerror)
+        print "--------------------------------------------------------------"
+        print "original exception output:"
+        print "--------------------------------------------------------------"
+        raise
+    
+    except:
+        print "Unexpected error:", sys.exc_info()[0]
+        raise
+    
 main()	
