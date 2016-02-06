@@ -321,15 +321,11 @@ class ACLGrepper:
         return True
 
 def tgrepper(lmatch, lfn, lfh, lopt):
-    '''
-    this function searches through paragraphes and prints out the whole paragraph
-    when matches found    
-    '''
                 output = 0
                 n = 0
                 para = [ '' ]
                 lgrepper = ACLGrepper(None,None,lmatch,None,None,False)                
-
+                
                 if not lfh:
                     lf = open(lfn,'r')
                 else:
@@ -348,19 +344,19 @@ def tgrepper(lmatch, lfn, lfh, lopt):
                         else:                # else reset paraarray only
                             para = [ '' ]
                             
-                        if ( lopt == '' ):
+                        if ( lopt.ip == None ):
                             if lmatch in line:  # if matchcode found set output flag
                                 output = 1
-                        if ( lopt == 'i' ):
+                        if lopt.ip:
                             if lgrepper.grep(line):  # if ip address is found set output flag
                                 output = 1
 
                     elif line[0] == ' ':   # if line belongs to a paragraph...
 
-                        if ( lopt == '' ):
+                        if ( lopt.ip == None ):
                             if lmatch in line:  # if matchcode found set output flag
                                 output = 1
-                        if ( lopt == 'i' ):
+                        if lopt.ip:
                             if lgrepper.grep(line):  # if ip address is found set output flag
                                 output = 1
                     else:
@@ -374,6 +370,7 @@ def main():
     parser = OptionParser(usage="Usage: \n    %prog [options] [matchstring] [file, file, ...]     or\n    cat textfile | tgrep [options] [matchstring]")
     parser.add_option("-d", "--debug", dest="debug", action="store_true", default=False, help="turn on debug")
     parser.add_option("-i", "--ipadd", dest="ip", default=None, help="matching ip addresses within subnets")
+    parser.add_option("-t", "--title-only", dest="title", action="store_true", default=None, help="only show paragraph titles and matching lines")
 #    parser.add_option("-r", "--recursive", dest="rec", action="store_true", default=False, help="search through subfolders")
 # ignore   parser.add_option("-m", "--match", dest="matchcode", default=None, help="string to be matched")
 
@@ -397,6 +394,7 @@ def main():
     n = 0
     para = [ '' ]
 
+
 #    grepper = ACLGrepper(options.source_ip, options.source_port, options.destination_ip, options.destination_port, options.protocol, options.match_any)
          
     try:
@@ -406,9 +404,9 @@ def main():
         if ( stat.S_ISFIFO(mode) or stat.S_ISREG(mode) ):  # if data is piped or redirected via stdin
             fh_stdin = sys.stdin
             if options.ip:
-                tgrepper(options.ip, '', fh_stdin, 'i')
+                tgrepper(options.ip, '', fh_stdin, options)
             else:
-                tgrepper(match, '', fh_stdin, '' ) # call tgrepper with stdin file handle
+                tgrepper(match, '', fh_stdin, options) # call tgrepper with stdin file handle
         else:
             while ( i < len(args) ):                # go through all filenames listed as arguments
                 file = args[i]
@@ -416,9 +414,9 @@ def main():
                     print "file not found: ", file
                 elif os.path.isfile(file):
                     if options.ip:
-                        tgrepper(options.ip, file, '', 'i')
+                        tgrepper(options.ip, file, '', options)
                     else:
-                        tgrepper(match, file, '', '')       # call tgrepper with filename, no file handle needed
+                        tgrepper(match, file, '', options)       # call tgrepper with filename, no file handle needed
                 i = i + 1
 
     except IOError as err:
