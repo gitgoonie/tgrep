@@ -323,46 +323,79 @@ class ACLGrepper:
 def tgrepper(lmatch, lfn, lfh, lopt):
                 output = 0
                 n = 0
-                para = [ '' ]
-                lgrepper = ACLGrepper(None,None,lmatch,None,None,False)                
-                
+                para = [ ]
+
+                # initializations based on options
+                if lopt.ip:
+                    lgrepper = ACLGrepper(None,None,lmatch,None,None,False)
+
+                # preparing file handlers and begin matching
                 if not lfh:
                     lf = open(lfn,'r')
                 else:
                     lf = lfh
-                    
-                for line in lf:
+                    lfn = '<stdin>'
 
+                lno = 0         # paragraph line counter
+                toutput = [ ]   # title only output
+
+                if ( lopt.prn == '1' ):
+                    print '///processed file:', lfn 
+                
+                for line in lf:
+                    
                     if line[0] !=' ':    # if begin of new paragraph
                         if output == 1:      # eventually print last paragraph and reset paraarray
-                            while n < len(para):
-                                print para[n],
-                                n = n + 1
-                            output = 0
-                            para = [ '' ]
-                            n = 0
+                            if lopt.title:
+                                while n < len(toutput):
+                                    if ( lopt.prn == '2' ):
+                                        print lfn, (': '),
+                                    print para[ toutput[n] ].rstrip('\n')                       
+                                    n = n + 1
+                                toutput = [ ]
+                                output = 0
+                                para = [ ]
+                                lno = 0
+                                n = 0
+                            else:
+                                while n < len(para):
+                                    if ( lopt.prn == '2' ):
+                                        print lfn, (': '),
+                                    print para[n],
+                                    n = n + 1
+                                output = 0
+                                para = [ ]
+                                n = 0
+                                lno = 0     # reset paragraph line counter
                         else:                # else reset paraarray only
-                            para = [ '' ]
+                            para = [ ]
+                            lno = 0         # reset paragraph line counter
+                            toutput = [ ]   # reset para title
                             
+                        toutput.append(lno) # save para title for title-only output
+                        
                         if ( lopt.ip == None ):
                             if lmatch in line:  # if matchcode found set output flag
                                 output = 1
                         if lopt.ip:
                             if lgrepper.grep(line):  # if ip address is found set output flag
                                 output = 1
-
+         
                     elif line[0] == ' ':   # if line belongs to a paragraph...
 
                         if ( lopt.ip == None ):
                             if lmatch in line:  # if matchcode found set output flag
                                 output = 1
+                                toutput.append(lno) # save line number for title only output
                         if lopt.ip:
                             if lgrepper.grep(line):  # if ip address is found set output flag
                                 output = 1
+                                toutput.append(lno) # save line number for title only output
                     else:
                         print "*** WARNING: Line not classified ***"    # For debug
                         print line
                     para.append(line)  # save line
+                    lno = lno + 1
                 lf.close()
 
 def main():
@@ -371,8 +404,8 @@ def main():
     parser.add_option("-d", "--debug", dest="debug", action="store_true", default=False, help="turn on debug")
     parser.add_option("-i", "--ipadd", dest="ip", default=None, help="matching ip addresses within subnets")
     parser.add_option("-t", "--title-only", dest="title", action="store_true", default=None, help="only show paragraph titles and matching lines")
+    parser.add_option("-p", "--print-filename", dest="prn", default="1", help="print filename in outputs (p1 = once per file, p2 = once per line")
 #    parser.add_option("-r", "--recursive", dest="rec", action="store_true", default=False, help="search through subfolders")
-# ignore   parser.add_option("-m", "--match", dest="matchcode", default=None, help="string to be matched")
 
 
     (options, args) = parser.parse_args()
@@ -383,40 +416,27 @@ def main():
 
     if options.ip:
         match = options.ip
-        
     else:
         match = args[0]     # grab matchcode
         del args[0]             # remove matchcode from arguments and leave files
 
-    output = 0             # flag to set if paragraph has to be printed out
-    fh_stdin =''            # file handle for stdin
+    fh_stdin = ''
     i = 0
-    n = 0
-    para = [ '' ]
 
-
-#    grepper = ACLGrepper(options.source_ip, options.source_port, options.destination_ip, options.destination_port, options.protocol, options.match_any)
-         
     try:
         # check if stdin contains some data:
         mode = os.fstat(0).st_mode
         
         if ( stat.S_ISFIFO(mode) or stat.S_ISREG(mode) ):  # if data is piped or redirected via stdin
-            fh_stdin = sys.stdin
-            if options.ip:
-                tgrepper(options.ip, '', fh_stdin, options)
-            else:
-                tgrepper(match, '', fh_stdin, options) # call tgrepper with stdin file handle
+            fh_stdin = sys.stdin                                                # save file handle
+            tgrepper(match, '', fh_stdin, options) # call tgrepper with stdin file handle
         else:
             while ( i < len(args) ):                # go through all filenames listed as arguments
                 file = args[i]
                 if not os.path.exists(file):
-                    print "file not found: ", file
+                    print 'file not found: ', file
                 elif os.path.isfile(file):
-                    if options.ip:
-                        tgrepper(options.ip, file, '', options)
-                    else:
-                        tgrepper(match, file, '', options)       # call tgrepper with filename, no file handle needed
+                    tgrepper(match, file, '', options)       # call tgrepper with filename, no file handle needed
                 i = i + 1
 
     except IOError as err:
