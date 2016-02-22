@@ -397,7 +397,7 @@ def main():
     parser.add_option("-i", "--ipadd", dest="ip", default=None, help="matching ip addresses within subnets")
     parser.add_option("-t", "--title-only", dest="title", action="store_true", default=None, help="only show paragraph titles and matching lines")
     parser.add_option("-p", "--print-filename", dest="prn", default="1", help="print filename in outputs (p1 = once per file, p2 = once per line")
-#    parser.add_option("-r", "--recursive", dest="rec", action="store_true", default=False, help="search through subfolders")
+    parser.add_option("-r", "--recursive", dest="rec", action="store_true", default=False, help="search through subfolders")
 
 
     (options, args) = parser.parse_args()
@@ -422,6 +422,13 @@ def main():
         if ( stat.S_ISFIFO(mode) or stat.S_ISREG(mode) ):  # if data is piped or redirected via stdin
             fh_stdin = sys.stdin                                                # save file handle
             tgrepper(match, fh_stdin, options, '<stdin>') # call tgrepper with stdin file handle
+
+        if options.rec:
+            for path, dirs, files in os.walk('./', topdown=True):
+                for name in files:
+                    curfile = (os.path.join(path, name))
+                    fh = open(curfile, 'r')
+                    tgrepper(match, fh, options, curfile)       # call tgrepper with filename, no file handle needed
         else:
             while ( i < len(args) ):                # go through all filenames listed as arguments
                 file = args[i]
