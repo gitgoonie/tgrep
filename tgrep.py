@@ -320,7 +320,7 @@ class ACLGrepper:
 
         return True
 
-def tgrepper(lmatch, lfn, lfh, lopt):
+def tgrepper(lmatch, lf, lopt, lfn):
                 output = 0
                 n = 0
                 para = [ ]
@@ -329,21 +329,14 @@ def tgrepper(lmatch, lfn, lfh, lopt):
                 if lopt.ip:
                     lgrepper = ACLGrepper(None,None,lmatch,None,None,False)
 
-                # preparing file handlers and begin matching
-                if not lfh:
-                    lf = open(lfn,'r')
-                else:
-                    lf = lfh
-                    lfn = '<stdin>'
-
                 lno = 0         # paragraph line counter
                 toutput = [ ]   # title only output
 
-                if ( lopt.prn == '1' ):
-                    print '///processed file:', lfn 
-                
+                if lopt.prn == '1':
+                    print '>>>processed file: ', lfn
+
                 for line in lf:
-                    
+
                     if line[0] !=' ':    # if begin of new paragraph
                         if output == 1:      # eventually print last paragraph and reset paraarray
                             if lopt.title:
@@ -396,7 +389,6 @@ def tgrepper(lmatch, lfn, lfh, lopt):
                         print line
                     para.append(line)  # save line
                     lno = lno + 1
-                lf.close()
 
 def main():
 
@@ -421,7 +413,7 @@ def main():
         del args[0]             # remove matchcode from arguments and leave files
 
     fh_stdin = ''
-    i = 0
+    i = 00
 
     try:
         # check if stdin contains some data:
@@ -429,14 +421,15 @@ def main():
         
         if ( stat.S_ISFIFO(mode) or stat.S_ISREG(mode) ):  # if data is piped or redirected via stdin
             fh_stdin = sys.stdin                                                # save file handle
-            tgrepper(match, '', fh_stdin, options) # call tgrepper with stdin file handle
+            tgrepper(match, fh_stdin, options, '<stdin>') # call tgrepper with stdin file handle
         else:
             while ( i < len(args) ):                # go through all filenames listed as arguments
                 file = args[i]
                 if not os.path.exists(file):
                     print 'file not found: ', file
                 elif os.path.isfile(file):
-                    tgrepper(match, file, '', options)       # call tgrepper with filename, no file handle needed
+                    fh = open(file, 'r')
+                    tgrepper(match, fh, options, file)       # call tgrepper with filename, no file handle needed
                 i = i + 1
 
     except IOError as err:
